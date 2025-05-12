@@ -34,6 +34,20 @@ def get_sample_and_format(df, col, regex, fmt):
     valid = bool(re.match(regex, sample))
     return sample, valid, fmt
 
+# Initialize session_state variables
+if "dfs" not in st.session_state:
+    st.session_state.dfs = {}
+if "run_anyway_1" not in st.session_state:
+    st.session_state.run_anyway_1 = False
+if "run_anyway_2" not in st.session_state:
+    st.session_state.run_anyway_2 = False
+if "run_anyway_3" not in st.session_state:
+    st.session_state.run_anyway_3 = False
+if "run_anyway_4" not in st.session_state:
+    st.session_state.run_anyway_4 = False
+if "run_anyway_5" not in st.session_state:
+    st.session_state.run_anyway_5 = False
+
 if team_tradex_file:
     ref_d = pd.read_csv(team_tradex_file, low_memory=False)
 else:
@@ -41,39 +55,39 @@ else:
 
 run_anyway = False
 
+# ========== CHECKPOINT 1 ==========
 if st.button("Checkpoint 1: Validate Date Formats"):
     st.markdown("### Checkpoint 1: Date Format Validation")
     validation_errors = []
-    dfs = {}
     samples = []
 
     if voiso_file and not voiso_na:
-        dfs['voiso'] = pd.read_csv(voiso_file, low_memory=False)
-        sample, valid, fmt = get_sample_and_format(dfs['voiso'], 'Date and time', *DATE_FORMATS['voiso'])
+        st.session_state.dfs['voiso'] = pd.read_csv(voiso_file, low_memory=False)
+        sample, valid, fmt = get_sample_and_format(st.session_state.dfs['voiso'], 'Date and time', *DATE_FORMATS['voiso'])
         samples.append(f"voiso: {sample} (Expected: {fmt})")
         if not valid:
             validation_errors.append(f"Voiso: Expected {fmt}, found '{sample}'")
     if tata_file and not tata_na:
-        dfs['tata'] = pd.read_csv(tata_file, low_memory=False)
-        sample, valid, fmt = get_sample_and_format(dfs['tata'], 'Call Start Date', *DATE_FORMATS['tata'])
+        st.session_state.dfs['tata'] = pd.read_csv(tata_file, low_memory=False)
+        sample, valid, fmt = get_sample_and_format(st.session_state.dfs['tata'], 'Call Start Date', *DATE_FORMATS['tata'])
         samples.append(f"tata: {sample} (Expected: {fmt})")
         if not valid:
             validation_errors.append(f"Tata: Expected {fmt}, found '{sample}'")
     if know_file and not know_na:
-        dfs['know'] = pd.read_csv(know_file, low_memory=False)
-        sample, valid, fmt = get_sample_and_format(dfs['know'], 'Date and Time', *DATE_FORMATS['know'])
+        st.session_state.dfs['know'] = pd.read_csv(know_file, low_memory=False)
+        sample, valid, fmt = get_sample_and_format(st.session_state.dfs['know'], 'Date and Time', *DATE_FORMATS['know'])
         samples.append(f"know: {sample} (Expected: {fmt})")
         if not valid:
             validation_errors.append(f"Knowlarity: Expected {fmt}, found '{sample}'")
     if qconn_file and not qconn_na:
-        dfs['qconn'] = pd.read_csv(qconn_file, low_memory=False)
-        sample, valid, fmt = get_sample_and_format(dfs['qconn'], 'Date time', *DATE_FORMATS['qconn'])
+        st.session_state.dfs['qconn'] = pd.read_csv(qconn_file, low_memory=False)
+        sample, valid, fmt = get_sample_and_format(st.session_state.dfs['qconn'], 'Date time', *DATE_FORMATS['qconn'])
         samples.append(f"qconn: {sample} (Expected: {fmt})")
         if not valid:
             validation_errors.append(f"Qkonnect: Expected {fmt}, found '{sample}'")
     if stringee_file and not stringee_na:
-        dfs['stringee'] = pd.read_csv(stringee_file, low_memory=False)
-        sample, valid, fmt = get_sample_and_format(dfs['stringee'], 'Start time', *DATE_FORMATS['stringee'])
+        st.session_state.dfs['stringee'] = pd.read_csv(stringee_file, low_memory=False)
+        sample, valid, fmt = get_sample_and_format(st.session_state.dfs['stringee'], 'Start time', *DATE_FORMATS['stringee'])
         samples.append(f"stringee: {sample} (Expected: {fmt})")
         if not valid:
             validation_errors.append(f"Stringee: Expected {fmt}, found '{sample}'")
@@ -85,20 +99,17 @@ if st.button("Checkpoint 1: Validate Date Formats"):
         for error in validation_errors:
             st.write(error)
         if st.button("Run Anyway (Checkpoint 1)"):
-            run_anyway = True
+            st.session_state.run_anyway_1 = True
     else:
         st.success("All date formats validated successfully!")
-        run_anyway = True
+        st.session_state.run_anyway_1 = True
 
-if run_anyway or st.session_state.get("run_anyway_1", False):
-    st.session_state["run_anyway_1"] = True
-
-    # ========== DATA PROCESSING ==========
-    # Build selected_dfs for concat
+# ========== DATA PROCESSING ==========
+if st.session_state.run_anyway_1:
     selected_dfs = []
     # Tata
-    if 'tata' in dfs:
-        tata = dfs['tata']
+    if 'tata' in st.session_state.dfs:
+        tata = st.session_state.dfs['tata']
         new_tata = tata[['Call Start Date', 'Connected to Agent','Call Status','Answer Duration (HH:MM:SS)',
                         'Hold Duration (HH:MM:SS)','Total Call Duration (HH:MM:SS)','Call Start Time','Customer Number']]
         tata_copy = new_tata.copy()
@@ -116,8 +127,8 @@ if run_anyway or st.session_state.get("run_anyway_1", False):
         tata_selected = tata_copy[['Source','Date', 'Dialer Name','Number', 'Call Status','Call Start Time','Total Call Duration', 'Talk Time', 'Hold Time']]
         selected_dfs.append(tata_selected)
     # Knowlarity
-    if 'know' in dfs:
-        know = dfs['know']
+    if 'know' in st.session_state.dfs:
+        know = st.session_state.dfs['know']
         new_Know = know[['Date and Time', 'Agent Name','Call Status', 'Talk Time (hh:mm:ss)', 'Hold Time (hh:mm:ss)','Total Call Duration (hh:mm:ss)','Customer']]
         new_Know['Date and Time'] = pd.to_datetime(new_Know['Date and Time'], errors='coerce', format='%Y-%m-%d %H:%M:%S')
         new_Know['Date'] = new_Know['Date and Time'].dt.date
@@ -137,8 +148,8 @@ if run_anyway or st.session_state.get("run_anyway_1", False):
         know_selected = know_copy[['Source','Date', 'Dialer Name','Number' ,'Call Status', 'Call Start Time','Total Call Duration','Talk Time', 'Hold Time']]
         selected_dfs.append(know_selected)
     # Voiso
-    if 'voiso' in dfs:
-        voiso = dfs['voiso']
+    if 'voiso' in st.session_state.dfs:
+        voiso = st.session_state.dfs['voiso']
         new_voiso = voiso[['Date and time','Agent(s)','Disposition','Talk time','Duration','DNIS/To']]
         new_voiso['Date and time'] = pd.to_datetime(new_voiso['Date and time'], errors='coerce', format='%m/%d/%Y %H:%M:%S')
         new_voiso['Date'] = new_voiso['Date and time'].dt.date
@@ -157,8 +168,8 @@ if run_anyway or st.session_state.get("run_anyway_1", False):
         voiso_selected = voiso_copy[['Source','Date', 'Dialer Name', 'Number','Call Status','Call Start Time','Total Call Duration', 'Talk Time']]
         selected_dfs.append(voiso_selected)
     # Qkonnect
-    if 'qconn' in dfs:
-        Qconn = dfs['qconn']
+    if 'qconn' in st.session_state.dfs:
+        Qconn = st.session_state.dfs['qconn']
         new_qconn = Qconn[['Date time','Agent Mobile','Call Event','Transfer Duration','Duration','User Mobile']]
         new_qconn['Date time'] = pd.to_datetime(new_qconn['Date time'], errors='coerce', format='%Y-%m-%d %H:%M:%S')
         new_qconn['Date'] = new_qconn['Date time'].dt.date
@@ -177,8 +188,8 @@ if run_anyway or st.session_state.get("run_anyway_1", False):
         qconn_selected = qconn_copy[['Source','Date', 'Dialer Name','Number', 'Call Status','Call Start Time','Total Call Duration', 'Talk Time']]
         selected_dfs.append(qconn_selected)
     # Stringee
-    if 'stringee' in dfs:
-        df = dfs['stringee']
+    if 'stringee' in st.session_state.dfs:
+        df = st.session_state.dfs['stringee']
         def duration_to_timedelta(duration):
             try:
                 hours, minutes, seconds = map(int, str(duration).split(':'))
@@ -213,51 +224,54 @@ if run_anyway or st.session_state.get("run_anyway_1", False):
         st.error("No dialer files selected or uploaded. Please upload at least one dialer file or uncheck NA.")
         st.stop()
     D = pd.concat(selected_dfs, ignore_index=True)
+    st.session_state.D = D
 
-    # Checkpoint 2: Null Date Entries
+    # ========== CHECKPOINT 2 ==========
     st.markdown("### Checkpoint 2: Null Date Entries")
     null_date_entries = D[D['Date'].isnull()]
     st.write(null_date_entries)
     if st.button("Run Anyway (Checkpoint 2)"):
-        st.session_state["run_anyway_2"] = True
+        st.session_state.run_anyway_2 = True
 
-if st.session_state.get("run_anyway_2", False):
-    # Checkpoint 3: Unique Dates Per Source
+# ========== CHECKPOINT 3 ==========
+if st.session_state.run_anyway_2:
     st.markdown("### Checkpoint 3: Unique Dates Per Source")
-    unique_dates_per_source = D.groupby('Source')['Date'].unique()
+    unique_dates_per_source = st.session_state.D.groupby('Source')['Date'].unique()
     st.write(unique_dates_per_source)
     if st.button("Run Anyway (Checkpoint 3)"):
-        st.session_state["run_anyway_3"] = True
+        st.session_state.run_anyway_3 = True
 
-if st.session_state.get("run_anyway_3", False):
-    # Checkpoint 4: ref.nunique()
+# ========== CHECKPOINT 4 ==========
+if st.session_state.run_anyway_3:
     st.markdown("### Checkpoint 4: Reference Data Uniqueness")
     st.write(ref_d.nunique())
     if st.button("Run Anyway (Checkpoint 4)"):
-        st.session_state["run_anyway_4"] = True
+        st.session_state.run_anyway_4 = True
 
-if st.session_state.get("run_anyway_4", False):
-    # Checkpoint 5: Missing CRM IDs
+# ========== CHECKPOINT 5 ==========
+if st.session_state.run_anyway_4:
     st.markdown("### Checkpoint 5: Missing CRM IDs")
-    # Merge with reference
     ref = ref_d.copy()
     ref = ref[~ref['Email'].str.contains('inactive', case=False, na=False)]
     ref = ref.drop_duplicates(subset=['Dialer Name','Email'])
     ref.rename(columns={'Email': 'CRM ID'}, inplace=True)
-    D['Dialer Name'] = D['Dialer Name'].astype(str).str.lower().str.replace(r"\s*\([^)]*\)|@.*|;.*", "", regex=True).str.strip()
+    st.session_state.D['Dialer Name'] = st.session_state.D['Dialer Name'].astype(str).str.lower().str.replace(r"\s*\([^)]*\)|@.*|;.*", "", regex=True).str.strip()
     ref['Dialer Name'] = ref['Dialer Name'].astype(str).str.lower().str.replace(r"\s*\([^)]*\)|@.*|;.*", "", regex=True).str.strip()
-    merged = D.merge(ref, how='left', left_on='Dialer Name', right_on='Dialer Name')
+    merged = st.session_state.D.merge(ref, how='left', left_on='Dialer Name', right_on='Dialer Name')
     crm_id_null_df = merged[merged['CRM ID'].isnull()]
     source = crm_id_null_df.groupby('Source')['Dialer Name'].unique()
     st.code(source.to_string(), language='text')
+    st.session_state.crm_id_null_df = crm_id_null_df
+    st.session_state.merged = merged
     if st.button("Run Anyway (Checkpoint 5)"):
-        st.session_state["run_anyway_5"] = True
+        st.session_state.run_anyway_5 = True
 
-if st.session_state.get("run_anyway_5", False):
-    # ========== FINAL CALCULATION & DOWNLOADS ==========
+# ========== FINAL DOWNLOADS ==========
+if st.session_state.run_anyway_5:
     st.markdown("### Final Reports & Downloads")
-    # Example: summary = merged, D = D, crm_id_null_df = crm_id_null_df
-    formatted_df = merged  # Replace with your actual summary logic if needed
+    formatted_df = st.session_state.merged  # Replace with your actual summary logic if needed
+    D = st.session_state.D
+    crm_id_null_df = st.session_state.crm_id_null_df
 
     today_str = datetime.now().strftime("%b_%d")
     st.download_button(
